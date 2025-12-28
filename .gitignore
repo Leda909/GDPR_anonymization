@@ -1,3 +1,10 @@
+# test data files
+*data
+*assets
+
+# terraform 
+terraform.tfvars
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
