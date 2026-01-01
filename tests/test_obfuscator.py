@@ -121,7 +121,7 @@ class TestObfuscator:
 
         # 3. ACT: Trigger the handler with EventBridge style event
         mock_event = {
-            "detail": {"bucket": {"name": source_bucket}, "object": {"key": source_key}}
+            "detail": {"bucket":{"name": source_bucket}, "object": {"key": source_key}}
         }
 
         lambda_handler(mock_event, None)

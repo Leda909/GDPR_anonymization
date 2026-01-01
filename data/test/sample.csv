@@ -1,0 +1,4 @@
+student_id,name,course,cohort,graduation_date,email_address
+1234,John Smith,Software,2024-03-31,2024-03-31,j.smith@email.com
+5678,Jane Doe,Data Science,2024-01-15,2024-01-15,j.doe@email.com
+9012,Bob Brown,Cyber Security,2023-11-20,2024-05-10,b.brown@provider.net

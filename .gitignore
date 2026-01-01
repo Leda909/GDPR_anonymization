@@ -1,7 +1,8 @@
 # test data files
-*data
-*assets
-code_notes.md
+*data/obfuscated
+*data/test/sample.json
+*data/test/sample.parquet
+*assets/optional
 
 # terraform 
 terraform.tfvars
