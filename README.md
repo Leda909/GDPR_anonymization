@@ -44,7 +44,7 @@ pii_fields         = ["name", "email_address", "phone_number"] - etc.
 
 ## AWS Architecture Diagram
 
-<img src="./assets/archit_diag.png" style="width: 40%;">
+<img src="./assets/archit_diag.png" style="width: 50%;">
 
 ### Project Compliance & Quality
 
