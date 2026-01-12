@@ -534,8 +534,7 @@ class TestObfuscator:
         # Opcional: Check the ValueError message contains
         assert (
             f"No primary key detected in {mock_event["file_to_obfuscate"]}."
-            f"Data records must be supplied with primary key."
-            in str(excinfo.value)
+            f"Data records must be supplied with primary key." in str(excinfo.value)
         )
 
     def test_lambda_obfuscator_if_primary_key_given_csv_file(self, s3_client):

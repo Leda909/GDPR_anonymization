@@ -4,6 +4,7 @@ import boto3
 import os
 
 from utils.obfuscator_lib import obfuscate_data
+
 # from .utils import obfuscate_data  # for utils/__init__.py
 
 # Configure logging for CloudeWatch monitoring

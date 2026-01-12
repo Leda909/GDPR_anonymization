@@ -83,10 +83,10 @@ pii_fields         = ["name", "email_address", "phone_number"] - etc.
 <!-- Python packages list -->
 ### Python packages:
 <ul>
-    <li>boto3 1.38.24</li>
-    <li>awswrangler 3.12.0</li>
-    <li>pandas 2.3.0</li>
-    <li>pytest 8.3.5</li>
+    <li>boto3</li>
+    <li>awswrangler</li>
+    <li>pandas</li>
+    <li>pytest</li>
     <li>moto</li>
     <li>bandit</li>
     <li>pip-audit</li>
