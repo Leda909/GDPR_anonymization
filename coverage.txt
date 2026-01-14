@@ -1,23 +1,26 @@
-Name                       Stmts   Miss  Cover   Missing
---------------------------------------------------------
-src/obfuscator.py             64      0   100%
-tests/test_obfuscator.py     151      0   100%
---------------------------------------------------------
-TOTAL                        215      0   100%
+--- UNIT TEST COVERAGE REPORT ---
+Name                          Stmts   Miss  Cover   Missing
+-----------------------------------------------------------
+src\lambda_function.py           39      0   100%
+src\utils\__init__.py             1      0   100%
+src\utils\obfuscator_lib.py      53      0   100%
+tests\test_obfuscator.py        223      0   100%
+-----------------------------------------------------------
+TOTAL                           316      0   100%
 
 --- SECURITY SCAN REPORT (BANDIT) ---
 [main]	INFO	profile include tests: None
 [main]	INFO	profile exclude tests: None
 [main]	INFO	cli include tests: None
 [main]	INFO	cli exclude tests: None
-[main]	INFO	running on Python 3.13.2
-Run started:2026-01-01 20:38:53.503288+00:00
+[main]	INFO	running on Python 3.13.1
+Run started:2026-01-14 02:31:00.676531+00:00
 
 Test results:
 	No issues identified.
 
 Code scanned:
-	Total lines of code: 90
+	Total lines of code: 161
 	Total lines skipped (#nosec): 0
 	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
 

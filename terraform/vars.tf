@@ -1,9 +1,14 @@
 variable "region" {
-    description = "AWS region"
-    type        = string
+  description = "AWS region"
+  type        = string
 }
 
 variable "pii_fields" {
-    description = "List of PII fields to obfuscate"
-    type        = list(string)
+  description = "List of PII fields to obfuscate"
+  type        = list(string)
+}
+
+variable "primary_key" {
+  description = "primary_key"
+  type        = string
 }
