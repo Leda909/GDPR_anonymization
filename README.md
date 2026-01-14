@@ -23,7 +23,13 @@ The service follows the "Anonymization at Ingestion" pattern:
 * **Output:** The resulting byte stream is saved to the `gdpr-obfuscated-bucket-[randomNumber]`
 * **Audit:** All actions monitored and potential errors are logged to AWS CloudWatch: All processing logs, including success metrics and error traces, are available in the /aws/lambda/gdpr_obfuscator log group. Error Handling: If an unsupported file type or corrupted file is uploaded, the service logs a descriptive error message without crashing the pipeline.
 
-###  
+The awswrangler (AWS SDK for Pandas) library was integrated to provide memory-efficient, high-level data processing and seamless S3 to DataFrame streaming, and by utilizing the AWS managed ARN layer, I maintain a lightweight Lambda package while gaining robust support for complex CSV, JSON, and Parquet schema handling.
+
+### The obfuscator tool will be invoked by sending a JSON string:<br>
+
+JSON string containing:
+* the S3 location of the required CSV file for obfuscation
+* the names of the fields that are required to be obfuscated 
 
 // Example EventBridge Trigger Payload (JSON)
 ```bash
@@ -35,11 +41,11 @@ The service follows the "Anonymization at Ingestion" pattern:
 
 ### Customizing Obfuscation
 You can define which fields to hide without changing the Python code through the alternative set up form. Edit the terraform/terraform.tfvars file.<br>
-Please, see example_terraform.tfvars:
-
+Please, see example_terraform.tfvars:<br>
 ```bash
 region             = "your-aws-region"
 pii_fields         = ["name", "email_address", "phone_number"] - etc.
+primary_key        = "student_id"  # <--- This is optional.
 ```
 
 ## AWS Architecture Diagram
@@ -208,30 +214,22 @@ For Linux | Mac OS:
 
 0. IMPORTANT! When run *terraform apply*, save the ingestion and the destination *S3 bucket names* from terraform output!
 
-Once deployed, you can use the AWS CLI to verify the EventBridge trigger: upload a file in the `gdpr-ingestion-bucket` S3 bucket. Then see, how EventBridge invoke Lambda on Object Created event, and Lambda executes the Obfuscation. Obfuscator_lib ran as Lambda Layer.
+1. IMPORTANT! If terraform deployed withouth adding pii_fields as env variables, you will need to invoke lambda with the payload (json) at the same time while uloading any raw file(s) to ingestion bucket. Otherwise lambda does not get the json file.
 
-1. IMPORTANT! If terraform deployed withouth adding pii_fields as env variables, first, you will need to give the **"payload"** before uloading any raw file(s) to ingestion bucket.
-
-You can add "primary_key" as well to payload<br>
+You can add "primary_key" as well to payload, but it is optional<br>
+Upload file and manually invoke the lambda with the right json format:<br>
 
 ```bash
-$payload = '{
-  "file_to_obfuscate": "s3://gdpr-ingestion-bucket-7bfe901a/{sub_folder_name}/example.csv",
-  "pii_fields": ["name", "email_address"],
-//  "primary_key": "student_id"  <--- optional
-}'
-```
-
-In case need to invoke lambda directly:<br>
-```bash
-aws lambda invoke \
-    --function-name lambda_calling_obfuscator_lib \
-    --payload '{"file_to_obfuscate": "s3://your-ingestion-bucket-name/{sub_folder_name}/sample.csv", "pii_fields": ["name", "email_address"]}' \
-    --cli-binary-format raw-in-base64-out \
+aws s3 cp "data/test/sample.csv" "s3://gdpr-ingestion-bucket-039c520a/new/sample.csv" &&
+aws lambda invoke `
+    --function-name lambda_calling_obfuscator_lib `
+    --region eu-west-2 `
+    --payload '{"file_to_obfuscate": "s3://your-ingestion-bucket-name/{sub_folder_name}/sample.csv", "pii_fields": ["name", "email_address"], "primary_key": "student_id"}' `
+    --cli-binary-format raw-in-base64-out `
     response.json
 ```
-( --payload $payload ` )
 
+Confirmation respond
 ```bash
 {            
     "StatusCode": 200,                                      
@@ -239,11 +237,32 @@ aws lambda invoke \
 }
 ```
 
+Unsupported file format
+```bash
+aws s3 cp "data/test/sample.txt" "s3://your-ingestion-bucket-name/{sub_folder_name}/sample.txt" &&
+aws lambda invoke `
+    --function-name lambda_calling_obfuscator_lib `
+    --region eu-west-2 `
+    --payload '{"file_to_obfuscate": "s3://your-ingestion-bucket-name/{sub_folder_name}/sample.txt", "pii_fields": ["name", "email_address"], "primary_key": "student_id"}' `
+    --cli-binary-format raw-in-base64-out `
+    response.json
+```
+
+```bash
+{
+    "StatusCode": 200,
+    "FunctionError": "Unhandled",
+    "ExecutedVersion": "$LATEST"
+}
+```
+
+1. Once deployed - ( by passing pii_field as env variables - ), you can use the AWS CLI to verify the EventBridge trigger: upload a file in the `gdpr-ingestion-bucket` S3 bucket. Then see, how EventBridge invoke Lambda on Object Created event, and Lambda executes the Obfuscation. Obfuscator_lib ran as Lambda Layer.
+
 2. Upload a Supported File (CSV, Json, Parquet) to ingestion S3 bucket<br>
-`aws s3 cp data/test/sample.csv s3://your-ingestion-bucket-name/{sub_folder_name}/`
+`aws s3 cp data/test/sample.csv s3://your-ingestion-bucket-name/{sub_folder_name}/new/`
 
 3. Upload an Unsupported File (TXT) to ingestion S3 bucket<br>
-`aws s3 cp data/test/sample.txt s3://your-ingestion-bucket-name/{sub_folder_name}/`
+`aws s3 cp data/test/sample.txt s3://your-ingestion-bucket-name/{sub_folder_name}/new/`
 
 4. Check the Results<br>
 
@@ -271,36 +290,7 @@ Example Output
 To download the all obfuscated files for manual inspection from aws S3 destination/obfuscated folder (it will create a local folder as aws), use:<br>
 `aws s3 sync s3://your-processed-bucket-name/obfuscated/ ./data/aws`
 
-5. Check CLoudWatch Logs for *run time* (Duration)<br>
-
-```bash
-STREAM_NAME=$(aws logs describe-log-streams \
-    --log-group-name /aws/lambda/lambda_calling_obfuscator_lib \
-    --order-by LastEventTime --descending --limit 1 \
-    --query 'logStreams[0].logStreamName' --output text)
-```
-
-```bash
-aws logs get-log-events \
-    --log-group-name /aws/lambda/lambda_calling_obfuscator_lib \
-    --log-stream-name "$STREAM_NAME" \
-    --query 'events[?contains(message, `REPORT`)].message' --output text
-```
-6. CloudWatch Metrics check<br>
-
-```bash
-aws cloudwatch get-metric-statistics \
-    --namespace AWS/Lambda \
-    --metric-name Duration \
-    --dimensions Name=FunctionName,Value=lambda_calling_obfuscator_lib \
-    --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
-    --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
-    --period 3600 \
-    --statistics Average Max
-```
-
-#### Expected outcome:
-
+#### Expected outcome:<br>
 Example sample.csv
 ```bash
 student_id, name, email_address
@@ -311,6 +301,39 @@ Example Obfuscated sample.csv
 ```bash
 student_id, name, email_address
 1234, *****, *****
+```
+
+5. Check CLoudWatch Logs for *run time* (Duration)<br>
+
+```bash
+$STREAM_NAME=$(aws logs describe-log-streams `
+    --log-group-name /aws/lambda/lambda_calling_obfuscator_lib `
+    --order-by LastEventTime --descending --limit 1 `
+    --query 'logStreams[0].logStreamName' --output text)
+```
+
+```bash
+aws logs get-log-events `
+    --log-group-name /aws/lambda/lambda_calling_obfuscator_lib `
+    --log-stream-name "$STREAM_NAME" `
+    --query 'events[?contains(message, `REPORT`)].message' --output text
+```
+6. CloudWatch Metrics check<br>
+
+```bash
+# Get the timestamps
+$StartTime = (Get-Date).AddHours(-1).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$EndTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+aws cloudwatch get-metric-statistics `
+    --namespace AWS/Lambda `
+    --metric-name Duration `
+    --dimensions Name=FunctionName,Value=lambda_calling_obfuscator_lib `
+    --region eu-west-2 `
+    --start-time $StartTime `
+    --end-time $EndTime `
+    --period 3600 `
+    --statistics Average Maximum
 ```
 
 ## Resources

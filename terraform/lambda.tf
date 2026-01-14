@@ -52,7 +52,8 @@ resource "aws_lambda_function" "gdpr_obfuscator_lambda" {
   environment {
     variables = {
       DESTINATION_BUCKET = aws_s3_bucket.obfuscated_bucket.bucket
-      PII_FIELDS = join(",", var.pii_fields)
+      PII_FIELDS         = join(",", var.pii_fields)
+      PRIMARY_KEY        = var.primary_key
     }
   }
 }
